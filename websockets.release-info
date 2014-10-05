@@ -1,5 +1,5 @@
 ;; -*- scheme -*-
 (repo git "git@bitbucket.org:thomashintz/{egg-name}.git")
-;(uri targz "https://github.com/mario-goulart/{egg-name}/tarball/{egg-release}")
+(uri targz "https://bitbucket.org/thomashintz/{egg-name}/get/{egg-release}.tar.gz")
 
 (release "0.0.1")
