@@ -623,7 +623,7 @@ static const uint8_t utf8d[] = {
                      (begin (thread-signal! (websocket-user-thread ws)
                                      (make-websocket-exception
                                       (make-property-condition 'connection-timeout)))
-                            (close-websocket ws close-reason: 1001))))))))
+                            (close-websocket ws close-reason: 'going-away))))))))
 
     (when (> (ping-interval) 0)
           (thread-start! ping-thread))
