@@ -25,7 +25,7 @@
 
 (import chicken scheme data-structures extras ports posix foreign)
 (use srfi-1 srfi-4 spiffy intarweb uri-common base64 simple-sha1 srfi-18
-     srfi-13 miscmacros mailbox)
+     srfi-13 mailbox)
 
 ; TODO make sure all C operations check args to prevent overflows
 (foreign-declare "#include \"utf8validator.c\"")
