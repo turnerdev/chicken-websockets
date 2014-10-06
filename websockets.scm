@@ -38,6 +38,8 @@
 (define accept-connection (make-parameter (lambda (origin) #t)))
 (define drop-incoming-pings (make-parameter #t))
 (define propagate-common-errors (make-parameter #f))
+(define access-denied ; TODO test
+  (make-parameter (lambda () (send-status 'forbidden "<h1>Access denied</h1>"))))
 
 (define max-frame-size (make-parameter 1048576)) ; 1MiB
 (define max-message-size
@@ -50,11 +52,6 @@
 (define (make-websocket-exception . conditions)
   (apply make-composite-condition (append `(,(make-property-condition 'websocket))
                                           conditions)))
-
-(define (make-invalid-header-exception type k v)
-  (make-composite-condition (make-websocket-exception
-                             (make-property-condition type k v))
-                            (make-property-condition 'invalid-header)))
 
 (define (make-protocol-violation-exception msg)
   (make-composite-condition (make-property-condition 'websocket)
@@ -78,7 +75,8 @@
     ('connection-close 8)
     ('ping 9)
     ('pong 10)
-    (else (error "bad optype")))) ; TODO
+    (else (signal (make-websocket-exception
+                   (make-property-condition 'invalid-optype))))))
 
 (define (control-frame? optype)
   (or (eq? optype 'ping) (eq? optype 'pong) (eq? optype 'connection-close)))
@@ -553,7 +551,6 @@ static const uint8_t utf8d[] = {
 
 (define (websocket-compute-handshake client-key)
   (let* ((key-and-magic
-          ; TODO generate new, randome, secure key every time
           (string-append client-key "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
          (key-and-magic-sha1 (sha1-sum key-and-magic)))
     (base64-encode key-and-magic-sha1)))
@@ -595,15 +592,14 @@ static const uint8_t utf8d[] = {
     ; make sure the request meets the spec for websockets
     (cond ((not (and (eq? (header-value 'connection headers #f) 'upgrade)
                      (string-ci= (car (header-value 'upgrade headers '(""))) "websocket")))
-           (signal (make-invalid-header-exception 'upgrade 'value
-                                                  (header-value 'upgrade headers #f))))
+           (signal (make-websocket-exception
+                    (make-property-condition 'missing-upgrade-header))))
           ((not (string= (header-value 'sec-websocket-version headers "") "13"))
-           (signal (make-invalid-header-exception
-                    'websocket-version 'version
-                    (header-value 'sec-websocket-version headers #f))))
+           (with-headers ; TODO test
+            `((sec-websocket-version "13"))
+            (lambda () (send-status 'upgrade-required))))
           ((not ((accept-connection) (header-value 'origin headers "")))
-           (signal (make-invalid-header-exception 'origin 'value
-                                                  (header-value 'origin headers #f)))))
+           ((access-denied))))
 
     (with-headers
      `((upgrade ("WebSocket" . #f))
