@@ -27,7 +27,6 @@
 (use srfi-1 srfi-4 spiffy intarweb uri-common base64 simple-sha1 srfi-18
      srfi-13 mailbox)
 
-; TODO make sure all C operations check args to prevent overflows
 (foreign-declare "#include \"utf8validator.c\"")
 
 (define-inline (neq? obj1 obj2) (not (eq? obj1 obj2)))
@@ -40,8 +39,13 @@
 (define drop-incoming-pings (make-parameter #t))
 (define propagate-common-errors (make-parameter #f))
 
-(define max-frame-size (make-parameter 65536))     ; 64KiB
-(define max-message-size (make-parameter 1048576)) ; 1MiB
+(define max-frame-size (make-parameter 1048576)) ; 1MiB
+(define max-message-size
+  (make-parameter 1048576 ; 1MiB
+                  (lambda (v)
+                    (if (> v 1073741823) ; max int size for unmask/utf8 check
+                        (signal (make-property-condition 'out-of-range))
+                        v))))
 
 (define (make-websocket-exception . conditions)
   (apply make-composite-condition (append `(,(make-property-condition 'websocket))
@@ -198,6 +202,8 @@
   (define-external wsv scheme-pointer payload)
   ((foreign-lambda* void ()
 "
+    if (wslen > UINT_MAX) { return -1; }
+
     const unsigned char* maskkey2 = wsmaskkey;
     const unsigned int kd = *(unsigned int*)maskkey2;
     const unsigned char* __restrict kb = maskkey2;
