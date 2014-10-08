@@ -34,7 +34,7 @@
 (define current-websocket (make-parameter #f))
 (define ping-interval (make-parameter 15))
 (define close-timeout (make-parameter 5))
-(define connection-timeout (make-parameter 58))
+(define connection-timeout (make-parameter 58)) ; a little grace period from 60s
 (define accept-connection (make-parameter (lambda (origin) #t)))
 (define drop-incoming-pings (make-parameter #t))
 (define propagate-common-errors (make-parameter #f))
@@ -104,7 +104,7 @@
   fragment?
   (payload fragment-payload)
   (length fragment-length)
-  (masked fragment-masked?)
+  (masked fragment-masked? set-fragment-masked!)
   (masking-key fragment-masking-key)
   (fin fragment-last?)
   (optype fragment-optype))
@@ -180,12 +180,13 @@
     (write-string data len outbound-port)
     #t))
 
-(define (send-message optype #!optional (data "") (ws (current-websocket)))
+(define (send-message data #!optional (optype 'text) (ws (current-websocket)))
   ;; TODO break up large data into multiple frames?
+  (optype->opcode optype) ; triggers error if invalid
   (dynamic-wind
       (lambda () (mutex-lock! (websocket-send-mutex ws)))
       (lambda () (send-frame ws optype data #t))
-      (lambda () (mutex-unlock! (websocket-send-mutex ws)))))
+      (lambda () (mutex-unlock! (websocket-send-mutex ws))))
 
 (define (websocket-unmask-frame-payload payload len frame-masking-key)
   (define tmaskkey (make-u8vector 4 #f #t #t))
@@ -224,10 +225,12 @@
 
 (define (unmask fragment)
   (if (fragment-masked? fragment)
-      (websocket-unmask-frame-payload
-       (fragment-payload fragment)
-       (fragment-length fragment)
-       (fragment-masking-key fragment))
+      (let ((r (websocket-unmask-frame-payload
+                (fragment-payload fragment)
+                (fragment-length fragment)
+                (fragment-masking-key fragment))))
+             (set-fragment-masked! fragment #f)
+             r)
       (fragment-payload fragment)))
 
 (define (read-frame-payload inbound-port frame-payload-length)
@@ -326,16 +329,12 @@
              (read-frame-payload inbound-port frame-payload-length)
              frame-payload-length frame-masked
              frame-masking-key frame-fin frame-optype))
-           ((eq? frame-optype 'connection-close)
+           ((eq? frame-optype 'connection-close) ; TODO, same as above?
             (make-fragment
              (read-frame-payload inbound-port frame-payload-length)
              frame-payload-length frame-masked frame-masking-key
              frame-fin frame-optype))
            (else
-            (thread-signal! (websocket-user-thread ws)
-                            (make-websocket-exception
-                             (make-property-condition 'unhandled-opcode
-                                                      'optype frame-optype)))
             (signal (make-websocket-exception
                      (make-property-condition 'unhandled-opcode
                                               'optype frame-optype)))))))))))
@@ -456,7 +455,7 @@ static const uint8_t utf8d[] = {
                  ; immediate response
                  ((and (eq? optype 'ping) last-frame (<= len 125))
                   (unless (drop-incoming-pings)
-                          (send-message 'pong (unmask fragment)))
+                          (send-message (unmask fragment) 'pong))
                   (loop fragments first type total-size))
 
                  ; protocol violation checks
@@ -501,6 +500,7 @@ static const uint8_t utf8d[] = {
                    (values #!eof optype)
                    (process-fragments fragments optype)))))
 
+; TODO does #!optional and #!key work together?
 (define (close-websocket #!optional (ws (current-websocket))
                          #!key (close-reason 'normal) (data (make-u8vector 0)))
   (define invalid-close-reason #f)
@@ -542,8 +542,7 @@ static const uint8_t utf8d[] = {
                 ;;                 (make-websocket-exception
                 ;;                  (make-property-condition 'close-timeout)))
                 )
-        (thread-join! close-thread))
-    (log-to (error-log) "closed")))
+        (thread-join! close-thread))))
 
 
 (define (sha1-sum in-bv)
@@ -586,7 +585,7 @@ static const uint8_t utf8d[] = {
            (lambda ()
              (let loop ()
                (thread-sleep! (ping-interval))
-               (send-message 'ping "" ws)
+               (send-message "" 'ping ws)
                (loop))))))
 
     ; make sure the request meets the spec for websockets
@@ -682,7 +681,9 @@ static const uint8_t utf8d[] = {
                  (close-input-port (request-port (current-request))))
          (unless (port-closed? (response-port (current-response)))
                  (close-output-port (response-port (current-response))))
-         (signal (make-websocket-exception (make-property-condition 'unexpected-error)))))))
+         (abort exn)
+         ;(signal (make-websocket-exception (make-property-condition 'unexpected-error)))
+         ))))
 
 (define (with-concurrent-websocket proc)
   (let ((parent-thread (current-thread)))
