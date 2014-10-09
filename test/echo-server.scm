@@ -12,7 +12,7 @@
            (let loop ()
              (receive (data type) (receive-message)
                       (unless (eq? type 'connection-close)
-                              (send-message type data)
+                              (send-message data type)
                               (loop))))))))
 
 (debug-log (current-output-port))
