@@ -25,9 +25,7 @@
 
 (import chicken scheme data-structures extras ports posix foreign)
 (use srfi-1 srfi-4 spiffy intarweb uri-common base64 simple-sha1 srfi-18
-     srfi-13 mailbox)
-
-(foreign-declare "#include \"utf8validator.c\"")
+     srfi-13 mailbox srfi-14 comparse)
 
 (define-inline (neq? obj1 obj2) (not (eq? obj1 obj2)))
 
@@ -186,7 +184,7 @@
   (dynamic-wind
       (lambda () (mutex-lock! (websocket-send-mutex ws)))
       (lambda () (send-frame ws optype data #t))
-      (lambda () (mutex-unlock! (websocket-send-mutex ws))))
+      (lambda () (mutex-unlock! (websocket-send-mutex ws)))))
 
 (define (websocket-unmask-frame-payload payload len frame-masking-key)
   (define tmaskkey (make-u8vector 4 #f #t #t))
@@ -339,53 +337,9 @@
                      (make-property-condition 'unhandled-optype
                                               'optype frame-optype)))))))))))
 
-(define (valid-utf8-2? s)
-  (define-external str c-string s)
-  (define-external len int (string-length s))
-  (zero?
-  ((foreign-lambda* int ()
-"
-static const uint8_t utf8d[] = {
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 40..5f
-  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 60..7f
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, // 80..9f
-  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7, // a0..bf
-  8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // c0..df
-  0xa,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x3,0x4,0x3,0x3, // e0..ef
-  0xb,0x6,0x6,0x6,0x5,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8,0x8, // f0..ff
-  0x0,0x1,0x2,0x3,0x5,0x8,0x7,0x1,0x1,0x1,0x4,0x6,0x1,0x1,0x1,0x1, // s0..s0
-  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,0,1,0,1,1,1,1,1,1, // s1..s2
-  1,2,1,1,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1, // s3..s4
-  1,2,1,1,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,3,1,3,1,1,1,1,1,1, // s5..s6
-  1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
-};
-
-   uint32_t si;
-   uint32_t *state;
-   si = 0;
-   state = &si;
-   uint32_t type;
-
-    for (int i = 0; i < len; i++) {
-        // type = utf8d[(uint8_t)str[i]];
-        type = utf8d[*((uint8_t*)str)];
-        *state = utf8d[256 + (*state) * 16 + type];
-
-        if (*state != 0) // reject
-            break;
-    }
-
-    C_return(*state);
-"
-))
-  ))
-
+(include "utf8-grammar.scm")
 (define (valid-utf8? s)
-  (let ((len (string-length s)))
-    ((foreign-lambda int "utf8_valid" scheme-pointer int)
-     s len)))
+  (parse utf8-string (->parser-input s) memoize: #t))
 
 (define (close-code->integer s)
   (if (string-null? s)
