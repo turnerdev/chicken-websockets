@@ -11,16 +11,16 @@
    send-message receive-message
 
    ; low level API
-   send-frame read-frame read-frame-payload
-   receive-fragments valid-utf8?
-   control-frame? upgrade-to-websocket
-   current-websocket unmask close-websocket
-   process-fragments
+   ;; send-frame read-frame read-frame-payload
+   ;; receive-fragments valid-utf8?
+   ;; control-frame? upgrade-to-websocket
+   ;; current-websocket unmask close-websocket
+   ;; process-fragments
 
-   ; fragment
-   make-fragment fragment? fragment-payload fragment-length
-   fragment-masked? fragment-masking-key fragment-last?
-   fragment-optype
+   ;; ; fragment
+   ;; make-fragment fragment? fragment-payload fragment-length
+   ;; fragment-masked? fragment-masking-key fragment-last?
+   ;; fragment-optype
    )
 
 (import chicken scheme data-structures extras ports posix foreign)
