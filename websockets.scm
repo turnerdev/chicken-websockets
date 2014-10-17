@@ -488,7 +488,8 @@
                 (begin
                   (send-frame ws 'connection-close
                                         (u8vector 3 (close-reason->close-code close-reason))
-                                        #t)))))))
+                                        #t))))
+          "close timeout thread")))
     (thread-start! close-thread)
     (if (> (close-timeout) 0)
         (unless (thread-join! close-thread (close-timeout) #f)
@@ -540,8 +541,10 @@
            (lambda ()
              (let loop ()
                (thread-sleep! (ping-interval))
-               (send-message "" 'ping ws)
-               (loop))))))
+               (when (eq? (websocket-state ws) 'open)
+                     (send-message "" 'ping ws)
+                     (loop))))
+           "ping thread")))
 
     ; make sure the request meets the spec for websockets
     (cond ((not (and (eq? (header-value 'connection headers #f) 'upgrade)
@@ -572,14 +575,16 @@
                   ; Add one to attempt to alleviate checking the timestamp
                   ; right before when the timeout should happen.
                  (thread-sleep! (+ 1 (connection-timeout)))
-                 (if (< (- (time->seconds (current-time))
-                           (time->seconds (websocket-last-message-timestamp ws)))
-                        (connection-timeout))
-                     (loop)
-                     (begin (thread-signal! (websocket-user-thread ws)
-                                     (make-websocket-exception
-                                      (make-property-condition 'connection-timeout)))
-                            (close-websocket ws close-reason: 'going-away))))))))
+                 (when (eq? (websocket-state ws) 'open)
+                       (if (< (- (time->seconds (current-time))
+                                 (time->seconds (websocket-last-message-timestamp ws)))
+                              (connection-timeout))
+                           (loop)
+                           (begin (thread-signal!
+                                   (websocket-user-thread ws)
+                                   (make-websocket-exception
+                                    (make-property-condition 'connection-timeout)))
+                                  (close-websocket ws close-reason: 'going-away)))))))))
 
     (when (> (ping-interval) 0)
           (thread-start! ping-thread))
