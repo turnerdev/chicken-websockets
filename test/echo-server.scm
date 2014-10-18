@@ -4,6 +4,8 @@
 (ping-interval 0)
 (drop-incoming-pings #f)
 (propagate-common-errors #f)
+(max-message-size 20971520)
+(max-frame-size 20971520)
 
 (handle-not-found
   (lambda (path)
