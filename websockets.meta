@@ -4,7 +4,7 @@
  (synopsis "websockets provides a websocket API.")
  (license "BSD")
  (category web)
- (depends srfi-1 srfi-4 spiffy intarweb uri-common base64 simple-sha1 srfi-18
-          srfi-13 miscmacros mailbox)
- ;(test-depends http-client test server-test regex)
- (files "websockets.setup" "websockets.meta" "websockets.release-info" "LICENSE"))
+ (author "Thomas Hintz")
+ (depends spiffy intarweb uri-common base64 simple-sha1 mailbox comparse)
+ (files "websockets.setup" "websockets.meta" "websockets.release-info" "LICENSE"
+        "utf8-grammar.scm"))
