@@ -185,6 +185,8 @@
 
   (define-external wslen int len)
 
+  ; TODO handle -1
+
   (define-external wsv scheme-pointer payload)
   ((foreign-lambda* void ()
 "
@@ -327,8 +329,30 @@
                                               'optype frame-optype)))))))))))
 
 (include "utf8-grammar.scm")
+
 (define (valid-utf8? s)
-  (parse utf8-string (->parser-input s) memoize: #t))
+  (or (let ((len (string-length s)))
+         ; Try to validate as an ascii string first. Its essentially
+         ; free, doesn't generate garbage and is many, many times
+         ; faster than the general purpose validator.
+         (define-external ws_utlen int len)
+         (define-external ws_uts scheme-pointer s)
+         (= 1
+            ((foreign-lambda* int ()
+"
+    if (ws_utlen > UINT_MAX) { return -1; }
+
+    for (int i = ws_utlen; i != 0; --i)
+    {
+        if (*((unsigned char*)ws_uts++) > 127)
+        {
+            C_return(0);
+        }
+    }
+
+    C_return(1);
+"))))
+      (parse utf8-string (->parser-input s))))
 
 (define (close-code->integer s)
   (if (string-null? s)
