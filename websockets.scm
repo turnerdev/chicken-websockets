@@ -451,8 +451,13 @@
 (define (process-fragments fragments optype #!optional (ws (current-websocket)))
   (let ((message-body (string-concatenate/shared
                        (reverse (map unmask fragments)))))
-    (when (and (eq? optype 'text)
-               (not (valid-utf8? message-body)))
+    (when (and (or (eq? optype 'text) (eq? optype 'connection-close))
+               (not (valid-utf8?
+                     (if (eq? optype 'text)
+                         message-body
+                         (if (> (string-length message-body) 2)
+                             (substring message-body 2)
+                             "")))))
           (set-websocket-state! ws 'error)
           (signal (make-websocket-exception
                    (make-property-condition
@@ -497,7 +502,10 @@
                                         #t)
                   (let loop ()
                     (receive (data type) (receive-message ws)
-                             (unless (eq? type 'connection-close) (loop)))))
+                             (if (eq? type 'connection-close)
+                                 (unless (valid-utf8? data)
+                                         (set! close-reason 'invalid-data))
+                                 (loop)))))
                 (begin
                   (send-frame ws 'connection-close
                                         (u8vector 3 (close-reason->close-code close-reason))
