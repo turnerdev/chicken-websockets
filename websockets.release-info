@@ -3,3 +3,4 @@
 (uri targz "https://bitbucket.org/thomashintz/{egg-name}/get/{egg-release}.tar.gz")
 
 (release "0.0.1")
+(release "0.1.0")
