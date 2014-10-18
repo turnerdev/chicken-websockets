@@ -1,7 +1,3 @@
-(import chicken scheme)
-(use srfi-4 srfi-13 srfi-14 comparse)
-
-
 (define (ucs-range->char-set/inclusive lower upper)
   (ucs-range->char-set lower (add1 upper)))
 
@@ -9,7 +5,9 @@
   (in (ucs-range->char-set/inclusive #x80 #xBF)))
 
 (define utf8-1
-  (in (ucs-range->char-set/inclusive #x00 #x7F)))
+  (satisfies (lambda (c) (or (< (char->integer c) 128)
+                        (and (> (char->integer c) 128)
+                             (< (char->integer c) 191))))))
 
 (define utf8-2
   (sequence
