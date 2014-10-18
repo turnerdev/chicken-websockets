@@ -107,17 +107,6 @@
   (fin fragment-last?)
   (optype fragment-optype))
 
-(define (string->bytes str)
-  (let* ((lst (map char->integer (string->list str)))
-         (bv (make-u8vector (length lst))))
-    (let loop ((lst lst)
-               (pos 0))
-      (if (null? lst) bv
-          (begin
-            (u8vector-set! bv pos (car lst))
-            (loop (cdr lst) (+ pos 1)))))))
-
-
 (define (hex-string->string hexstr)
   ;; convert a string like "a745ff12" to a string
   (let ((result (make-string (/ (string-length hexstr) 2))))
@@ -455,7 +444,6 @@
                    (process-fragments fragments optype)))))
 
 ; TODO does #!optional and #!key work together?
-; TODO document websocket state close states
 (define (close-websocket #!optional (ws (current-websocket))
                          #!key (close-reason 'normal) (data (make-u8vector 0)))
   (define invalid-close-reason #f)
