@@ -23,9 +23,10 @@
    ;; fragment-optype
    )
 
-(import chicken scheme data-structures extras ports posix foreign)
-(use srfi-1 srfi-4 spiffy intarweb uri-common base64 simple-sha1 srfi-18
-     srfi-13 mailbox srfi-14 comparse)
+(import chicken scheme data-structures extras ports posix foreign
+        srfi-13 srfi-14 srfi-18)
+(use srfi-1 srfi-4 spiffy intarweb uri-common base64 simple-sha1
+     mailbox comparse)
 
 (define-inline (neq? obj1 obj2) (not (eq? obj1 obj2)))
 
