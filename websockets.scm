@@ -198,14 +198,15 @@
     const unsigned char* __restrict kb = maskkey2;
 
 
-    for (int i = wslen >> 2; i != 0; --i)
+    int i;
+    for (i = wslen >> 2; i != 0; --i)
     {
         *((unsigned int*)wsv) ^= kd;
         wsv += 4;
     }
 
     const int rem = wslen & 3;
-    for (int i = 0; i < rem; ++i)
+    for (i = 0; i < rem; ++i)
     {
         *((unsigned int*)wsv++) ^= kb[i];
     }
@@ -343,7 +344,8 @@
 "
     if (ws_utlen > UINT_MAX) { return -1; }
 
-    for (int i = ws_utlen; i != 0; --i)
+    int i;
+    for (i = ws_utlen; i != 0; --i)
     {
         if (*((unsigned char*)ws_uts++) > 127)
         {
