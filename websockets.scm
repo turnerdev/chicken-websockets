@@ -570,7 +570,7 @@
            "ping thread")))
 
     ; make sure the request meets the spec for websockets
-    (cond ((not (and (eq? (header-value 'connection headers #f) 'upgrade)
+    (cond ((not (and (member 'upgrade (header-values 'connection headers))
                      (string-ci= (car (header-value 'upgrade headers '(""))) "websocket")))
            (signal (make-websocket-exception
                     (make-property-condition 'missing-upgrade-header))))
