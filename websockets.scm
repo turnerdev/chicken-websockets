@@ -226,46 +226,7 @@
 (define (read-frame-payload inbound-port frame-payload-length)
   (let ((masked-data (make-string frame-payload-length)))
     (read-string! frame-payload-length masked-data inbound-port)
-    masked-data)
-;;   (let* ((masked-data (make-string frame-payload-length)))
-;;     (read-string! frame-payload-length masked-data inbound-port)
-
-;;     (define tmaskkey (make-u8vector 4 #f #t #t))
-;;     (u8vector-set! tmaskkey 0 (vector-ref frame-masking-key 0))
-;;     (u8vector-set! tmaskkey 1 (vector-ref frame-masking-key 1))
-;;     (u8vector-set! tmaskkey 2 (vector-ref frame-masking-key 2))
-;;     (u8vector-set! tmaskkey 3 (vector-ref frame-masking-key 3))
-;;     (define-external wsmaskkey blob (u8vector->blob/shared tmaskkey))
-
-;;     (define-external wslen int frame-payload-length)
-
-;;     (define-external wsv scheme-pointer masked-data)
-
-;;     (if frame-masked
-;;         (begin
-;;           ((foreign-lambda* void ()
-;; "
-;;     const unsigned char* maskkey2 = wsmaskkey;
-;;     const unsigned int kd = *(unsigned int*)maskkey2;
-;;     const unsigned char* __restrict kb = maskkey2;
-
-
-;;     for (int i = wslen >> 2; i != 0; --i)
-;;     {
-;;         *((unsigned int*)wsv) ^= kd;
-;;         wsv += 4;
-;;     }
-
-;;     const int rem = wslen & 3;
-;;     for (int i = 0; i < rem; ++i)
-;;     {
-;;         *((unsigned int*)wsv++) ^= kb[i];
-;;     }
-;; "
-;;           ))
-;;           masked-data)
-;;     masked-data))
-  )
+    masked-data))
 
 (define (read-frame total-size ws)
   (let* ((inbound-port (websocket-inbound-port ws))
