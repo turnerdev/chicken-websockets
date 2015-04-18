@@ -192,8 +192,6 @@
   (define-external wsv scheme-pointer payload)
   ((foreign-lambda* void ()
 "
-    if (wslen > UINT_MAX) { return -1; }
-
     const unsigned char* maskkey2 = wsmaskkey;
     const unsigned int kd = *(unsigned int*)maskkey2;
     const unsigned char* __restrict kb = maskkey2;
