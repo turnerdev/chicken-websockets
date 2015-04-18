@@ -291,10 +291,8 @@
          ; Try to validate as an ascii string first. Its essentially
          ; free, doesn't generate garbage and is many, many times
          ; faster than the general purpose validator.
-         (define-external ws_utlen int len)
-         (define-external ws_uts scheme-pointer s)
          (= 1
-            ((foreign-lambda* int ()
+            ((foreign-lambda* int ((size_t ws_utlen) (scheme-pointer ws_uts))
 "
     if (ws_utlen > UINT_MAX) { return -1; }
 
@@ -308,7 +306,7 @@
     }
 
     C_return(1);
-"))))
+") len s)))
       (parse utf8-string (->parser-input s))))
 
 (define (close-code->integer s)
