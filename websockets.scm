@@ -183,14 +183,8 @@
   (u8vector-set! tmaskkey 1 (vector-ref frame-masking-key 1))
   (u8vector-set! tmaskkey 2 (vector-ref frame-masking-key 2))
   (u8vector-set! tmaskkey 3 (vector-ref frame-masking-key 3))
-  (define-external wsmaskkey blob (u8vector->blob/shared tmaskkey))
 
-  (define-external wslen int len)
-
-  ; TODO handle -1
-
-  (define-external wsv scheme-pointer payload)
-  ((foreign-lambda* void ()
+  ((foreign-lambda* void ((blob wsmaskkey) (int wslen) (scheme-pointer wsv))
 "
     const unsigned char* maskkey2 = wsmaskkey;
     const unsigned int kd = *(unsigned int*)maskkey2;
@@ -210,7 +204,7 @@
         *((unsigned int*)wsv++) ^= kb[i];
     }
 "
-))
+) (u8vector->blob/shared tmaskkey) len payload)
   payload)
 
 (define (unmask fragment)
