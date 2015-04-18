@@ -166,6 +166,7 @@
      outbound-port)
 
     (write-string data len outbound-port)
+   (flush-output (response-port (current-response)))
     #t))
 
 (define (send-message data #!optional (optype 'text) (ws (current-websocket)))
