@@ -184,21 +184,21 @@
   (u8vector-set! tmaskkey 2 (vector-ref frame-masking-key 2))
   (u8vector-set! tmaskkey 3 (vector-ref frame-masking-key 3))
 
-  ((foreign-lambda* void ((blob wsmaskkey) (int wslen) (scheme-pointer wsv))
+  ((foreign-lambda* void ((blob wsmaskkey) (size_t wslen) (scheme-pointer wsv))
 "
     const unsigned char* maskkey2 = wsmaskkey;
     const unsigned int kd = *(unsigned int*)maskkey2;
     const unsigned char* __restrict kb = maskkey2;
 
 
-    int i;
+    size_t i;
     for (i = wslen >> 2; i != 0; --i)
     {
         *((unsigned int*)wsv) ^= kd;
         wsv += 4;
     }
 
-    const int rem = wslen & 3;
+    const size_t rem = wslen & 3;
     for (i = 0; i < rem; ++i)
     {
         *((unsigned int*)wsv++) ^= kb[i];
