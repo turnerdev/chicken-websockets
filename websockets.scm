@@ -8,7 +8,7 @@
 
    ; high level API
    with-websocket with-concurrent-websocket
-   send-message receive-message
+   send-message receive-message current-websocket
 
    ; low level API
    ;; send-frame read-frame read-frame-payload
