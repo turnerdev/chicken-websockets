@@ -1,13 +1,31 @@
+<!DOCTYPE html>
 <html>
-  <body>
+  <head>
+    <title>websocket test page</title>
     <script type="text/javascript">
-      var ws = new WebSocket("ws://localhost:8080/web-socket");
+      var ws = new WebSocket("ws://localhost:8080/web-socket")
       ws.onmessage = function(evt) {
-        alert(evt.data);
+          let response = document.createElement('div')
+          response.innerText = evt.data
+          document.getElementById("responses").appendChild(response)
       };
       ws.onopen = function() {
-        ws.send('Hello!');
+	  console.log("Connection established")
+      }
+      function send(e) {
+	  e.preventDefault()
+          const input = document.querySelector('input')
+          ws.send(input.value)
+          input.value = ""
+	  input.focus()
+	  return false
       }
     </script>
+  </head>
+  <body>
+    <form id="client" onsubmit="return send(event)">
+    <input type="text" autofocus placeholder="Message to server"/>
+    <input type="submit" value="Go"/>
+    <div id="responses"></div>
   </body>
 </html>

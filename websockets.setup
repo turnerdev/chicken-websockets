@@ -1,9 +1,0 @@
-;;; websockets.setup -*- scheme -*-
-
-;; Compile the extension
-(compile -s -O3 -d1 -j websockets websockets.scm)
-(compile -s -O3 -d1 websockets.import.scm)
-
-(install-extension 'websockets
-                   '("websockets.so" "websockets.import.so")
-                   `((version "0.1.6")))

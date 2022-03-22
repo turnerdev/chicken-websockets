@@ -1,5 +1,7 @@
-(import chicken scheme posix)
-(use spiffy websockets)
+(import spiffy
+	websockets
+	(chicken string)
+	srfi-18)
 
 (ping-interval 0)
 (drop-incoming-pings #f)
@@ -13,9 +15,9 @@
          (lambda ()
            (let loop ()
              (receive (data type) (receive-message)
-                      (unless (eq? type 'connection-close)
-                              (send-message data type)
-                              (loop))))))))
+	       (unless (eq? type 'connection-close)
+		 (send-message data type)
+		 (loop))))))))
 
 (debug-log (current-output-port))
 (root-path ".")

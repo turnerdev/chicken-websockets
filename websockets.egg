@@ -1,0 +1,10 @@
+; -*-scheme-*-
+((synopsis "websockets provides a websocket API.")
+ (license "BSD")
+ (author "Thomas Hintz")
+ (category web)
+ (components (extension websockets
+			(source "websockets.scm")
+			(source-dependencies "utf8-grammar.scm")
+			(csc-options "-O3" "-d3")))
+ (dependencies spiffy intarweb uri-common base64 simple-sha1 mailbox comparse))
